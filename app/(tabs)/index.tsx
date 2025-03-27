@@ -1,6 +1,7 @@
 import { View, Text, SafeAreaView, Image, StatusBar } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   useFonts,
   Poppins_300Light,
@@ -10,6 +11,8 @@ import {
 } from "@expo-google-fonts/poppins";
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
+
   // Load Poppins font
   const [fontsLoaded] = useFonts({
     Poppins_300Light,
@@ -71,12 +74,12 @@ export default function HomeScreen() {
               />
             </View>
             <View className="bg-white/10 rounded-full p-2">
-              <Ionicons name="notifications" size={24} color="white" />{" "}
+              <Ionicons name="notifications" size={24} color="white" />
             </View>
           </View>
 
           {/* Sun Illustration with Glow Effect */}
-          <View className="items-center justify-center my-16 relative">
+          <View className="items-center justify-center my-20 relative">
             {/* Glow effect */}
             <View className="absolute w-52 h-52 rounded-full bg-yellow-400/10" />
             <View className="absolute w-40 h-40 rounded-full bg-yellow-400/20" />
@@ -118,7 +121,7 @@ export default function HomeScreen() {
                   textShadowOffset: { width: 0, height: 1 },
                   textShadowRadius: 8,
                 }}
-                className="text-white text-8xl tracking-tight pt-8 font-semibold"
+                className="text-white text-8xl tracking-tight pt-4 font-semibold"
               >
                 34°
               </Text>
@@ -137,14 +140,14 @@ export default function HomeScreen() {
                 <Ionicons name="navigate-outline" size={16} color="white" />
                 <Text
                   style={{ fontFamily: "Poppins_400Regular" }}
-                  className="text-white text-base ml-2 w-12 font-semibold"
+                  className="text-white text-md ml-2 w-12 font-semibold"
                 >
                   Wind
                 </Text>
-                <Text className="text-white text-base mx-4 opacity-60">|</Text>
+                <Text className="text-white text-md mx-4 opacity-60">|</Text>
                 <Text
                   style={{ fontFamily: "Poppins_400Regular" }}
-                  className="text-white text-base font-semibold"
+                  className="text-white text-md font-semibold"
                 >
                   15 km/h
                 </Text>
@@ -155,14 +158,14 @@ export default function HomeScreen() {
                 <Ionicons name="water-outline" size={16} color="white" />
                 <Text
                   style={{ fontFamily: "Poppins_400Regular" }}
-                  className="text-white text-base ml-2 w-12 font-semibold"
+                  className="text-white text-md ml-2 w-12 font-semibold"
                 >
                   Hum
                 </Text>
-                <Text className="text-white text-base mx-4 opacity-60">|</Text>
+                <Text className="text-white text-md mx-4 opacity-60">|</Text>
                 <Text
                   style={{ fontFamily: "Poppins_400Regular" }}
-                  className="text-white text-base font-semibold"
+                  className="text-white text-md font-semibold"
                 >
                   26 %
                 </Text>
@@ -170,8 +173,11 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Forecast Button - Positioned at bottom */}
-          <View className="absolute bottom-8 left-0 right-0 items-center">
+          {/* Forecast Button - Positioned with proper spacing for tab bar */}
+          <View
+            className="items-center mt-28"
+            style={{ marginBottom: 80 + insets.bottom }}
+          >
             <View
               className="bg-white py-5 rounded-[20px] flex-row items-center justify-center"
               style={{
