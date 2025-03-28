@@ -23,11 +23,31 @@ import { fetchCurrentWeather } from "@/api/api";
 import { getWeatherIconUrl } from "@/helpers";
 import { format } from "date-fns";
 
+// List of world capitals to rotate through
+const WORLD_CAPITALS = [
+  "Tokyo",
+  "Paris",
+  "London",
+  "Berlin",
+  "Rome",
+  "Madrid",
+  "Washington",
+  "Ottawa",
+  "Beijing",
+  "Moscow",
+  "New Delhi",
+  "Brasília",
+  "Canberra",
+  "Pretoria",
+  "Cairo",
+];
+
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const [weatherData, setWeatherData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [currentCapitalIndex, setCurrentCapitalIndex] = useState(0);
 
   // Load Poppins font
   const [fontsLoaded] = useFonts({
@@ -38,18 +58,33 @@ export default function HomeScreen() {
   });
 
   useEffect(() => {
+    // Set up interval to rotate capitals every minute
+    const capitalRotationInterval = setInterval(() => {
+      setCurrentCapitalIndex(
+        (prevIndex) => (prevIndex + 1) % WORLD_CAPITALS.length
+      );
+    }, 60000); // 60 seconds
+
+    return () => clearInterval(capitalRotationInterval);
+  }, []);
+
+  useEffect(() => {
     const loadWeatherData = async () => {
       try {
-        const data = await fetchCurrentWeather();
+        setLoading(true);
+        const currentCapital = WORLD_CAPITALS[currentCapitalIndex];
+        const data = await fetchCurrentWeather(currentCapital);
         setWeatherData(data);
+        setError(null);
       } catch (err) {
-        setError(err.message);
+        setError((err as Error).message);
       } finally {
         setLoading(false);
       }
     };
+
     loadWeatherData();
-  }, []);
+  }, [currentCapitalIndex]);
 
   if (!fontsLoaded || loading) {
     return (
@@ -114,12 +149,12 @@ export default function HomeScreen() {
               >
                 {weatherData?.name || "Loading..."}
               </Text>
-              <Ionicons
-                name="chevron-down"
-                size={20}
-                color="white"
-                className="ml-2"
-              />
+              <Text
+                style={{ fontFamily: "Poppins_400Regular" }}
+                className="text-white text-sm ml-2"
+              >
+                (Capital #{currentCapitalIndex + 1}/{WORLD_CAPITALS.length})
+              </Text>
             </View>
             <View className="bg-white/10 rounded-full p-2">
               <Ionicons name="notifications" size={24} color="white" />
@@ -233,7 +268,21 @@ export default function HomeScreen() {
             style={{ marginBottom: 80 + insets.bottom }}
           >
             <TouchableOpacity
-              onPress={() => router.navigate("/(screens)/forecast")}
+              onPress={() => {
+                if (weatherData) {
+                  router.push({
+                    pathname: "/(screens)/forecast",
+                    params: {
+                      city: JSON.stringify({
+                        name: weatherData.name,
+                        country: weatherData.sys?.country || "",
+                        lat: weatherData.coord.lat,
+                        lon: weatherData.coord.lon,
+                      }),
+                    },
+                  });
+                }
+              }}
               className="bg-white py-5 rounded-[20px] flex-row items-center justify-center"
               style={{
                 elevation: 4,

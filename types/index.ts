@@ -1,4 +1,12 @@
-interface WeatherResponse {
+export interface CitySearchResult {
+  name: string;
+  country: string;
+  state?: string;
+  lat: number;
+  lon: number;
+}
+
+export interface WeatherResponse {
   weather: {
     id: number;
     main: string;
@@ -19,9 +27,13 @@ interface WeatherResponse {
   };
   dt: number;
   name: string;
+  coord: {
+    lat: number;
+    lon: number;
+  };
 }
 
-interface ForecastResponse {
+export interface ForecastResponse {
   list: {
     dt: number;
     main: {
@@ -37,4 +49,22 @@ interface ForecastResponse {
   city: {
     name: string;
   };
+}
+
+export interface RecentSearch {
+  name: string;
+  temp: string;
+  lat: number;
+  lon: number;
+  country: string;
+}
+
+export interface WeatherPreview {
+  name: string;
+  country: string;
+  temp: number;
+  description: string;
+  icon: string;
+  lat: number;
+  lon: number;
 }
