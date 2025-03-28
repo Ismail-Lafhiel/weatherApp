@@ -1,4 +1,11 @@
-import { View, Text, SafeAreaView, Image, StatusBar } from "react-native";
+import {
+  View,
+  Text,
+  SafeAreaView,
+  Image,
+  StatusBar,
+  TouchableOpacity,
+} from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,6 +16,7 @@ import {
   Poppins_500Medium,
   Poppins_600SemiBold,
 } from "@expo-google-fonts/poppins";
+import { router } from "expo-router";
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -121,7 +129,7 @@ export default function HomeScreen() {
                   textShadowOffset: { width: 0, height: 1 },
                   textShadowRadius: 8,
                 }}
-                className="text-white text-8xl tracking-tight pt-4 font-semibold"
+                className="text-white text-8xl tracking-tight pt-8 font-semibold"
               >
                 34°
               </Text>
@@ -178,7 +186,8 @@ export default function HomeScreen() {
             className="items-center mt-28"
             style={{ marginBottom: 80 + insets.bottom }}
           >
-            <View
+            <TouchableOpacity
+              onPress={() => router.navigate("/(screens)/forecast")}
               className="bg-white py-5 rounded-[20px] flex-row items-center justify-center"
               style={{
                 elevation: 4,
@@ -201,7 +210,7 @@ export default function HomeScreen() {
                 color="#666"
                 className="ml-4"
               />
-            </View>
+            </TouchableOpacity>
           </View>
         </SafeAreaView>
       </LinearGradient>
