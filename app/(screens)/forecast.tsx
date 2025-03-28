@@ -1,14 +1,14 @@
-"use client";
-
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   SafeAreaView,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import {
@@ -17,10 +17,17 @@ import {
   Poppins_500Medium,
   Poppins_600SemiBold,
 } from "@expo-google-fonts/poppins";
+import { fetchForecast } from "@/api/api";
+import { getWeatherIconUrl } from "@/helpers";
+import { format, fromUnixTime } from "date-fns";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function ForecastScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const [forecastData, setForecastData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Load Poppins font
   const [fontsLoaded] = useFonts({
@@ -29,85 +36,61 @@ export default function ForecastScreen() {
     Poppins_600SemiBold,
   });
 
-  if (!fontsLoaded) {
-    return null;
+  useEffect(() => {
+    const loadForecastData = async () => {
+      try {
+        const data = await fetchForecast();
+        setForecastData(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadForecastData();
+  }, []);
+
+  if (!fontsLoaded || loading) {
+    return (
+      <LinearGradient
+        colors={["#56CCF2", "#2F80ED"]}
+        className="flex-1 items-center justify-center"
+      >
+        <ActivityIndicator size="large" color="white" />
+      </LinearGradient>
+    );
   }
 
-  // Weather icon components
-  const WeatherIcon = ({ type }: { type: string }) => {
-    switch (type) {
-      case "partly-cloudy":
-        return (
-          <View className="items-center justify-center">
-            <Image
-              source={{
-                uri: "https://cdn-icons-png.flaticon.com/512/1146/1146869.png",
-              }}
-              className="w-10 h-10"
-              resizeMode="contain"
-              style={{ tintColor: "white" }}
-            />
-          </View>
-        );
-      case "cloudy":
-        return (
-          <View className="items-center justify-center">
-            <Image
-              source={{
-                uri: "https://cdn-icons-png.flaticon.com/512/414/414927.png",
-              }}
-              className="w-10 h-10"
-              resizeMode="contain"
-              style={{ tintColor: "white" }}
-            />
-          </View>
-        );
-      case "sunny":
-        return (
-          <View className="items-center justify-center">
-            <Image
-              source={{
-                uri: "https://cdn-icons-png.flaticon.com/512/869/869869.png",
-              }}
-              className="w-12 h-12"
-              resizeMode="contain"
-              style={{ tintColor: "white" }}
-            />
-          </View>
-        );
-      default:
-        return (
-          <View className="items-center justify-center">
-            <Image
-              source={{
-                uri: "https://cdn-icons-png.flaticon.com/512/414/414927.png",
-              }}
-              className="w-10 h-10"
-              resizeMode="contain"
-              style={{ tintColor: "white" }}
-            />
-          </View>
-        );
-    }
-  };
+  if (error) {
+    return (
+      <LinearGradient
+        colors={["#56CCF2", "#2F80ED"]}
+        className="flex-1 items-center justify-center"
+      >
+        <Text className="text-white text-lg">{error}</Text>
+      </LinearGradient>
+    );
+  }
 
-  // Today's hourly forecast data
-  const hourlyForecast = [
-    { time: "15:00", temp: "29°", icon: "partly-cloudy", isActive: false },
-    { time: "16:00", temp: "26°", icon: "partly-cloudy", isActive: false },
-    { time: "17:00", temp: "24°", icon: "cloudy", isActive: true },
-    { time: "18:00", temp: "23°", icon: "cloudy", isActive: false },
-    { time: "19:00", temp: "22°", icon: "cloudy", isActive: false },
-  ];
+  // Process hourly forecast (next 5 hours)
+  const hourlyForecast = forecastData?.list.slice(0, 5).map((item: any) => ({
+    time: format(fromUnixTime(item.dt), "HH:mm"),
+    temp: `${Math.round(item.main.temp)}°`,
+    icon: item.weather[0].icon,
+  }));
 
-  // Next days forecast data
-  const dailyForecast = [
-    { date: "Sep. 13", temp: "21°", icon: "partly-cloudy" },
-    { date: "Sep. 14", temp: "22°", icon: "cloudy" },
-    { date: "Sep. 15", temp: "34°", icon: "sunny" },
-    { date: "Sep. 16", temp: "27°", icon: "cloudy" },
-    { date: "Sep. 17", temp: "32°", icon: "partly-cloudy" },
-  ];
+  const dailyForecast = forecastData?.list
+    .filter((item: any, index: number) => index % 8 === 0)
+    .slice(0, 7)
+    .map((item: any) => ({
+      date: format(fromUnixTime(item.dt), "EEE, MMM d"),
+      dayOfWeek: format(fromUnixTime(item.dt), "EEE"),
+      temp: `${Math.round(item.main.temp)}°`,
+      icon: item.weather[0].icon,
+      condition: item.weather[0].main,
+      minTemp: Math.round(item.main.temp_min),
+      maxTemp: Math.round(item.main.temp_max),
+    }));
 
   return (
     <LinearGradient
@@ -164,17 +147,17 @@ export default function ForecastScreen() {
                 style={{ fontFamily: "Poppins_400Regular" }}
                 className="text-white text-md"
               >
-                Sep. 12
+                {format(new Date(), "MMM. d")}
               </Text>
             </View>
 
             {/* Hourly Forecast */}
             <View className="flex-row justify-between mt-4 mb-6">
-              {hourlyForecast.map((item, index) => (
+              {hourlyForecast?.map((item: any, index: number) => (
                 <View
                   key={index}
                   className={`items-center justify-between py-4 px-1 rounded-[20px] ${
-                    item.isActive ? "bg-white/20" : ""
+                    index === 2 ? "bg-white/20" : ""
                   }`}
                   style={{ width: 70 }}
                 >
@@ -184,7 +167,13 @@ export default function ForecastScreen() {
                   >
                     {item.temp}
                   </Text>
-                  <WeatherIcon type={item.icon} />
+                  <Image
+                    source={{
+                      uri: getWeatherIconUrl(item.icon),
+                    }}
+                    className="w-20 h-16"
+                    resizeMode="contain"
+                  />
                   <Text
                     style={{ fontFamily: "Poppins_400Regular" }}
                     className="text-white text-md mt-6"
@@ -196,8 +185,8 @@ export default function ForecastScreen() {
             </View>
 
             {/* Next Forecast */}
-            <View className="px-4 mb-4 mt-10">
-              <View className="flex-row justify-between items-center mb-8">
+            <View className="px-4 my-4">
+              <View className="flex-row justify-between items-center mb-4">
                 <Text
                   style={{ fontFamily: "Poppins_600SemiBold" }}
                   className="text-white text-2xl"
@@ -208,40 +197,48 @@ export default function ForecastScreen() {
               </View>
 
               {/* Daily Forecast */}
-              <View className="relative">
-                {/* Vertical line indicator */}
-                <View className="absolute right-1 top-4 bottom-4 w-1.5 bg-white/30 rounded-full" />
-
-                {dailyForecast.map((item, index) => (
-                  <View
-                    key={index}
-                    className="flex-row items-center py-3 justify-between"
-                    style={{
-                      gap: 24,
-                    }}
-                  >
-                    <Text
-                      style={{ fontFamily: "Poppins_400Regular" }}
-                      className="text-white text-lg w-20"
+              <View className="relative h-[350px]">
+                {" "}
+                <View className="absolute right-1 top-0 bottom-0 w-1.5 bg-white/30 rounded-full" />
+                <ScrollView
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={{ paddingBottom: 20 }}
+                >
+                  {dailyForecast?.map((item: any, index: number) => (
+                    <View
+                      key={index}
+                      className="flex-row items-center py-3 justify-between"
+                      style={{
+                        gap: 20,
+                      }}
                     >
-                      {item.date}
-                    </Text>
-
-                    <WeatherIcon type={item.icon} />
-
-                    <Text
-                      style={{ fontFamily: "Poppins_500Medium" }}
-                      className="text-white text-lg min-w-[60px] text-right mr-12"
-                    >
-                      {item.temp}
-                    </Text>
-                  </View>
-                ))}
+                      <Text
+                        style={{ fontFamily: "Poppins_400Regular" }}
+                        className="text-white text-lg"
+                      >
+                        {item.date}
+                      </Text>
+                      <Image
+                        source={{
+                          uri: getWeatherIconUrl(item.icon),
+                        }}
+                        className="w-16 h-16"
+                        resizeMode="contain"
+                      />
+                      <Text
+                        style={{ fontFamily: "Poppins_500Medium" }}
+                        className="text-white text-lg min-w-[60px] text-right mr-12"
+                      >
+                        {item.temp}
+                      </Text>
+                    </View>
+                  ))}
+                </ScrollView>
               </View>
             </View>
 
             {/* Attribution */}
-            <View className="items-center mt-10">
+            <View className="items-center">
               <View className="flex-row items-center">
                 <Ionicons
                   name="sunny"
@@ -253,7 +250,7 @@ export default function ForecastScreen() {
                   style={{ fontFamily: "Poppins_400Regular" }}
                   className="text-white text-lg"
                 >
-                  AccuWeather
+                  OpenWeather
                 </Text>
               </View>
             </View>

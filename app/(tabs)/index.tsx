@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -5,10 +6,12 @@ import {
   Image,
   StatusBar,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { router } from "expo-router";
 import {
   useFonts,
   Poppins_300Light,
@@ -16,10 +19,15 @@ import {
   Poppins_500Medium,
   Poppins_600SemiBold,
 } from "@expo-google-fonts/poppins";
-import { router } from "expo-router";
+import { fetchCurrentWeather } from "@/api/api";
+import { getWeatherIconUrl } from "@/helpers";
+import { format } from "date-fns";
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const [weatherData, setWeatherData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Load Poppins font
   const [fontsLoaded] = useFonts({
@@ -29,8 +37,40 @@ export default function HomeScreen() {
     Poppins_600SemiBold,
   });
 
-  if (!fontsLoaded) {
-    return null; // Return null while fonts are loading
+  useEffect(() => {
+    const loadWeatherData = async () => {
+      try {
+        const data = await fetchCurrentWeather();
+        setWeatherData(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadWeatherData();
+  }, []);
+
+  if (!fontsLoaded || loading) {
+    return (
+      <LinearGradient
+        colors={["#56CCF2", "#2F80ED"]}
+        className="flex-1 items-center justify-center"
+      >
+        <ActivityIndicator size="large" color="white" />
+      </LinearGradient>
+    );
+  }
+
+  if (error) {
+    return (
+      <LinearGradient
+        colors={["#56CCF2", "#2F80ED"]}
+        className="flex-1 items-center justify-center"
+      >
+        <Text className="text-white text-lg">{error}</Text>
+      </LinearGradient>
+    );
   }
 
   return (
@@ -72,7 +112,7 @@ export default function HomeScreen() {
                 style={{ fontFamily: "Poppins_600SemiBold" }}
                 className="text-white text-2xl ml-2"
               >
-                Surabaya
+                {weatherData?.name || "Loading..."}
               </Text>
               <Ionicons
                 name="chevron-down"
@@ -86,19 +126,17 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          {/* Sun Illustration with Glow Effect */}
-          <View className="items-center justify-center my-20 relative">
-            {/* Glow effect */}
-            <View className="absolute w-52 h-52 rounded-full bg-yellow-400/10" />
-            <View className="absolute w-40 h-40 rounded-full bg-yellow-400/20" />
-            <View className="absolute w-32 h-32 rounded-full bg-yellow-400/30" />
-            <Image
-              source={{
-                uri: "https://pngimg.com/d/sun_PNG13431.png",
-              }}
-              className="w-28 h-28"
-              resizeMode="contain"
-            />
+          {/* Weather Icon */}
+          <View className="items-center justify-center my-12">
+            {weatherData?.weather[0]?.icon && (
+              <Image
+                source={{
+                  uri: getWeatherIconUrl(weatherData.weather[0].icon, "4x"),
+                }}
+                className="w-32 h-32"
+                resizeMode="contain"
+              />
+            )}
           </View>
 
           {/* Weather Card */}
@@ -116,7 +154,9 @@ export default function HomeScreen() {
                 style={{ fontFamily: "Poppins_400Regular" }}
                 className="text-white text-base"
               >
-                Today, 12 September
+                {weatherData?.dt
+                  ? format(new Date(weatherData.dt * 1000), "EEEE, d MMMM")
+                  : "Loading..."}
               </Text>
             </View>
 
@@ -131,13 +171,15 @@ export default function HomeScreen() {
                 }}
                 className="text-white text-8xl tracking-tight pt-8 font-semibold"
               >
-                34°
+                {weatherData?.main?.temp
+                  ? `${Math.round(weatherData.main.temp)}°`
+                  : "--°"}
               </Text>
               <Text
                 style={{ fontFamily: "Poppins_400Regular" }}
                 className="text-white text-xl mt-1"
               >
-                Sunny
+                {weatherData?.weather[0]?.main || "Loading"}
               </Text>
             </View>
 
@@ -157,7 +199,9 @@ export default function HomeScreen() {
                   style={{ fontFamily: "Poppins_400Regular" }}
                   className="text-white text-md font-semibold"
                 >
-                  15 km/h
+                  {weatherData?.wind?.speed
+                    ? `${Math.round(weatherData.wind.speed * 3.6)} km/h`
+                    : "-- km/h"}
                 </Text>
               </View>
 
@@ -175,13 +219,15 @@ export default function HomeScreen() {
                   style={{ fontFamily: "Poppins_400Regular" }}
                   className="text-white text-md font-semibold"
                 >
-                  26 %
+                  {weatherData?.main?.humidity
+                    ? `${weatherData.main.humidity}%`
+                    : "--%"}
                 </Text>
               </View>
             </View>
           </View>
 
-          {/* Forecast Button - Positioned with proper spacing for tab bar */}
+          {/* Forecast Button */}
           <View
             className="items-center mt-28"
             style={{ marginBottom: 80 + insets.bottom }}
@@ -205,7 +251,7 @@ export default function HomeScreen() {
                 Forecast report
               </Text>
               <Ionicons
-                name="chevron-up"
+                name="chevron-forward"
                 size={20}
                 color="#666"
                 className="ml-4"
